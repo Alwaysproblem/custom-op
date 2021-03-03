@@ -3,6 +3,7 @@ NVCC := nvcc
 PYTHON_BIN_PATH = python
 
 ZERO_OUT_SRCS = $(wildcard tensorflow_zero_out/cc/kernels/*.cc) $(wildcard tensorflow_zero_out/cc/ops/*.cc)
+ADD_ONE_SRCS = $(wildcard tensorflow_add_one/cc/kernels/*.cc) $(wildcard tensorflow_add_one/cc/ops/*.cc)
 TIME_TWO_SRCS = tensorflow_time_two/cc/kernels/time_two_kernels.cc $(wildcard tensorflow_time_two/cc/kernels/*.h) $(wildcard tensorflow_time_two/cc/ops/*.cc)
 
 TF_CFLAGS := $(shell $(PYTHON_BIN_PATH) -c 'import tensorflow as tf; print(" ".join(tf.sysconfig.get_compile_flags()))')
@@ -12,6 +13,7 @@ CFLAGS = ${TF_CFLAGS} -fPIC -O2 -std=c++11
 LDFLAGS = -shared ${TF_LFLAGS}
 
 ZERO_OUT_TARGET_LIB = tensorflow_zero_out/python/ops/_zero_out_ops.so
+ADD_ONE_TARGET_LIB = tensorflow_add_one/python/ops/_add_one_ops.so
 TIME_TWO_GPU_ONLY_TARGET_LIB = tensorflow_time_two/python/ops/_time_two_ops.cu.o
 TIME_TWO_TARGET_LIB = tensorflow_time_two/python/ops/_time_two_ops.so
 
@@ -25,6 +27,18 @@ zero_out_test: tensorflow_zero_out/python/ops/zero_out_ops_test.py tensorflow_ze
 	$(PYTHON_BIN_PATH) tensorflow_zero_out/python/ops/zero_out_ops_test.py
 
 zero_out_pip_pkg: $(ZERO_OUT_TARGET_LIB)
+	./build_pip_pkg.sh make artifacts
+
+# add_one op for CPU
+add_one_op: $(ADD_ONE_TARGET_LIB)
+
+$(ADD_ONE_TARGET_LIB): $(ADD_ONE_SRCS)
+	$(CXX) $(CFLAGS) -o $@ $^ ${LDFLAGS}
+
+add_one_test: tensorflow_add_one/python/ops/add_one_ops_test.py tensorflow_add_one/python/ops/add_one_ops.py $(ADD_ONE_TARGET_LIB)
+	$(PYTHON_BIN_PATH) tensorflow_add_one/python/ops/add_one_ops_test.py
+
+add_one_pip_pkg: $(ADD_ONE_TARGET_LIB)
 	./build_pip_pkg.sh make artifacts
 
 
